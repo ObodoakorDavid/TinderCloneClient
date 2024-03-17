@@ -77,7 +77,7 @@ export const AuthProvider = ({ children }) => {
           Authorization: token ? `Bearer ${token}` : null,
         },
       });
-      console.log(data);
+      // console.log(data);
       setUser({ id: data.userProfile._id, image: data.userProfile.image });
       // navigate("/user");
     } catch (err) {

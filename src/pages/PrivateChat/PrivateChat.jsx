@@ -8,7 +8,7 @@ const PrivateChat = () => {
   const { chatId } = useParams();
   const [input, setInput] = useState("");
   const [isLaoding, setIsLoading] = useState(true);
-  const { socket } = useChat();
+  const { socket, setIsTyping } = useChat();
   const { user } = useAuth();
 
   const [chatMessages, setChatMessages] = useState(null);
@@ -37,22 +37,42 @@ const PrivateChat = () => {
       console.log(incomingMessage);
       setChatMessages((prevMessages) => [...prevMessages, incomingMessage]);
     });
-
-    return () => {
-      socket.off("getMessage");
-    };
   }, [socket, setChatMessages]);
 
   if (isLaoding) {
     return <div>Loading...</div>;
   }
 
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    // setMessages((prev) => [...prev, input]);
+    chatService.sendMessage({
+      text: input,
+      sender: user.id,
+      socket,
+      recipientId,
+      chatId,
+    });
+    setInput("");
+    socket.emit("isTyping", { typing: false, recipientId, chatId });
+  };
+
+  const handleChange = (e) => {
+    setInput(e.target.value);
+    if (e.target.value !== "") {
+      return socket.emit("isTyping", {
+        typing: true,
+        recipientId,
+        chatId,
+      });
+    }
+    socket.emit("isTyping", { typing: false, recipientId, chatId });
+  };
+
   return (
     <div>
       {chatMessages && chatMessages.length > 0 ? (
         chatMessages.map((message, i) => {
-          console.log(message);
-          console.log(message.sender._id === user.id);
           return (
             <div key={i}>
               <p
@@ -68,27 +88,11 @@ const PrivateChat = () => {
       ) : (
         <p>Start Chatting</p>
       )}
-      <form
-        onSubmit={(e) => {
-          e.preventDefault();
-          // setMessages((prev) => [...prev, input]);
-          chatService.sendMessage({
-            text: input,
-            sender: user.id,
-            socket,
-            recipientId,
-            chatId,
-          });
-          setInput("");
-        }}
-        action=""
-      >
+      <form onSubmit={handleSubmit} action="">
         <input
           type="text"
           value={input}
-          onChange={(e) => {
-            setInput(e.target.value);
-          }}
+          onChange={handleChange}
           className="w-100 mb-2"
         />
         <button className="w-100">send</button>

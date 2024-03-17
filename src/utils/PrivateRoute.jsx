@@ -36,7 +36,7 @@ const PrivateRoute = () => {
     return <p>Loading...</p>;
   }
 
-  console.log(user);
+  // console.log(user);
 
   return token ? <Outlet /> : <Navigate to="/signin" />;
 };

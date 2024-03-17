@@ -15,6 +15,7 @@ export const ChatProvider = ({ children }) => {
   const [socket, setSocket] = useState(null);
   const [onlineUsers, setOnlineUsers] = useState(null);
   const [newMessage, setNewMessage] = useState(null);
+  const [isTyping, setIsTyping] = useState(false);
 
   const [chats, setChats] = useState(null);
 
@@ -28,13 +29,13 @@ export const ChatProvider = ({ children }) => {
   }, []);
 
   useEffect(() => {
-    if (newMessage == null) {
+    if (!newMessage) {
       return;
     }
 
-    console.log("newwwwww");
+    console.log("New message received:", newMessage);
 
-    const newChats = chats.map((chat) => {
+    const updatedChats = chats.map((chat) => {
       if (chat.chatId === newMessage.chatId) {
         return {
           ...chat,
@@ -44,13 +45,12 @@ export const ChatProvider = ({ children }) => {
             text: newMessage.text,
           },
         };
-      } else {
-        return chat;
       }
+      return chat;
     });
 
-    console.log(newChats);
-    setChats(newChats);
+    console.log("Updated chats:", updatedChats);
+    setChats(updatedChats);
   }, [newMessage]);
 
   useEffect(() => {
@@ -58,6 +58,7 @@ export const ChatProvider = ({ children }) => {
       return;
     }
     socket.on("getMessage", (incomingMessage) => {
+      console.log(incomingMessage);
       setNewMessage(incomingMessage);
     });
 
@@ -76,18 +77,29 @@ export const ChatProvider = ({ children }) => {
     };
   }, []);
 
+  // adds new users, gets online users and tracks typing state
   useEffect(() => {
     if (socket === null || user === null) {
       return;
     }
 
+    // adds new users
     socket.emit("addNewUser", user.id);
+
+    //gets online users
     socket.on("getOnlineUsers", (res) => {
       setOnlineUsers(res.filter((eachUser) => eachUser.userId !== user.id));
     });
 
+    // tracks typing state
+    socket.on("isTyping", (data) => {
+      console.log(data);
+      setIsTyping(data);
+    });
+
     return () => {
       socket.off("getOnlineUsers");
+      socket.off("isTyping");
     };
   }, [socket, user]);
 
@@ -96,6 +108,8 @@ export const ChatProvider = ({ children }) => {
     onlineUsers,
     socket,
     chats,
+    setIsTyping,
+    isTyping,
   };
   return (
     <ChatContext.Provider value={contextData}>{children}</ChatContext.Provider>
