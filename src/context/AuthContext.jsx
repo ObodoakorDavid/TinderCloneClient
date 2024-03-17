@@ -31,7 +31,7 @@ export const AuthProvider = ({ children }) => {
         localStorage.setItem("token", JSON.stringify(data.token));
         setUser({ id: data.id, image: data.image });
         toast.success("Registration Successful");
-        navigate("/chat");
+        navigate("/user");
       } catch (error) {
         console.log(error.response.data.message);
         toast.error(error.response.data.message);
@@ -51,10 +51,10 @@ export const AuthProvider = ({ children }) => {
         localStorage.setItem("token", JSON.stringify(data.token));
         setUser({ id: data.id, image: data.image });
         toast.success("LogIn Successful");
-        navigate("/chat");
+        navigate("/user");
       } catch (error) {
-        console.log(error.response.data.message);
-        toast.error(error.response.data.message);
+        console.log(error.response?.data.message);
+        toast.error(error.response?.data.message);
       } finally {
         setIsAuthenticating(false);
       }
@@ -77,13 +77,14 @@ export const AuthProvider = ({ children }) => {
           Authorization: token ? `Bearer ${token}` : null,
         },
       });
-      setUser({ id: data.id, image: data.image });
-      navigate('/chat')
+      console.log(data);
+      setUser({ id: data.userProfile._id, image: data.userProfile.image });
+      // navigate("/user");
     } catch (err) {
       console.log(err);
       localStorage.removeItem("token");
       setToken(null);
-      // navigate("/");
+      navigate("/signin");
     }
   };
 

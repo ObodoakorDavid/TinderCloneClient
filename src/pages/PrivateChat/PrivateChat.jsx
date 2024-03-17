@@ -2,46 +2,83 @@ import React, { useEffect, useState } from "react";
 import useChat from "../../hooks/useChat";
 import { useParams } from "react-router";
 import useAuth from "../../hooks/useAuth";
-import axios from "axios";
+import chatService from "../../service/chatService";
 
 const PrivateChat = () => {
-  const { recipientId } = useParams();
+  const { chatId } = useParams();
   const [input, setInput] = useState("");
-  const { messages, setMessages, socket, handleSendMessage } = useChat();
-  const { token } = useAuth();
+  const [isLaoding, setIsLoading] = useState(true);
+  const { socket } = useChat();
+  const { user } = useAuth();
+
+  const [chatMessages, setChatMessages] = useState(null);
+  const [recipientId, setRecipientId] = useState(null);
 
   useEffect(() => {
-    const getMessages = async () => {
-      const { data } = await axios.get(
-        `http://localhost:4000/api/message/${recipientId}`,
-        {
-          headers: {
-            Authorization: token ? `Bearer ${token}` : null,
-          },
-        }
-      );
-      console.log(data.messages);
-      setMessages(
-        data.messages.map((message) => ({
-          text: message.text,
-          sentBy: message.sentBy,
-        }))
-      );
+    const retrieveChatMessages = async () => {
+      const chat = await chatService.getChatMessages({
+        chatId,
+      });
+      setIsLoading(false);
+
+      if (chat) {
+        console.log(chat.messages);
+        setChatMessages(chat.messages);
+        setRecipientId(chat.members.find((member) => member !== user.id));
+      }
     };
-    getMessages();
+    if (chatId) {
+      retrieveChatMessages();
+    }
   }, []);
 
-  console.log(messages);
+  useEffect(() => {
+    socket.on("getMessage", (incomingMessage) => {
+      console.log(incomingMessage);
+      setChatMessages((prevMessages) => [...prevMessages, incomingMessage]);
+    });
+
+    return () => {
+      socket.off("getMessage");
+    };
+  }, [socket, setChatMessages]);
+
+  if (isLaoding) {
+    return <div>Loading...</div>;
+  }
+
   return (
     <div>
-      {messages.map((message, i) => {
-        return <p key={i}>{message.text}</p>;
-      })}
+      {chatMessages && chatMessages.length > 0 ? (
+        chatMessages.map((message, i) => {
+          console.log(message);
+          console.log(message.sender._id === user.id);
+          return (
+            <div key={i}>
+              <p
+                className={`${
+                  message?.sender._id == user.id ? "text-end" : "text-start"
+                }`}
+              >
+                {message?.text}
+              </p>
+            </div>
+          );
+        })
+      ) : (
+        <p>Start Chatting</p>
+      )}
       <form
         onSubmit={(e) => {
           e.preventDefault();
           // setMessages((prev) => [...prev, input]);
-          handleSendMessage(recipientId, input);
+          chatService.sendMessage({
+            text: input,
+            sender: user.id,
+            socket,
+            recipientId,
+            chatId,
+          });
           setInput("");
         }}
         action=""

@@ -3,11 +3,12 @@ import { Link } from "react-router-dom";
 
 const Home = () => {
   return (
-    <div>
+    <div className="d-flex justify-content-between">
       <Link to="/signin">SignIn</Link>
       <Link to="/signup">SignUp</Link>
+      <Link to="/user">UserChats</Link>
       <Link to="/chat">ChatHome</Link>
-    </div>
+    </div>  
   );
 };
 
